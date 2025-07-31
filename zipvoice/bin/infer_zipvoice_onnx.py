@@ -79,6 +79,8 @@ from zipvoice.tokenizer.tokenizer import (
 from zipvoice.utils.common import AttributeDict, str2bool
 from zipvoice.utils.feature import VocosFbank
 
+import numpy as np
+
 HUGGINGFACE_REPO = "k2-fsa/ZipVoice"
 MODEL_DIR = {
     "zipvoice": "zipvoice",
@@ -348,6 +350,8 @@ def sample(
     text_condition = model.run_text_encoder(
         tokens, prompt_tokens, prompt_features_len, speed
     )
+    np.save("debug_text_condition.npy", text_condition.numpy())
+    print("!!! Đã lưu text_condition vào file debug_text_condition.npy")
 
     batch_size, num_frames, _ = text_condition.shape
     assert batch_size == 1
@@ -364,6 +368,8 @@ def sample(
     speech_condition = torch.nn.functional.pad(
         prompt_features, (0, 0, 0, num_frames - prompt_features.shape[1])
     )  # (B, T, F)
+    np.save("debug_speech_condition.npy", speech_condition.numpy())
+    print("!!! Đã lưu pred_features cuối cùng vào file debug_speech_condition.npy")
     guidance_scale = torch.tensor(guidance_scale, dtype=torch.float32)
 
     for step in range(num_step):
@@ -377,6 +383,8 @@ def sample(
         x = x + v * (timesteps[step + 1] - timesteps[step])
 
     x = x[:, prompt_features_len.item() :, :]
+    np.save("debug_pred_features.npy", x.numpy())
+    print("!!! Đã lưu pred_features cuối cùng vào file debug_pred_features.npy")
     return x
 
 
