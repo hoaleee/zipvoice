@@ -362,6 +362,7 @@ def sample(
     speed = torch.tensor(speed, dtype=torch.float32)
     debug(tokens, 'tokens')
     debug(prompt_tokens, 'prompt_tokens')
+    debug(prompt_features, 'prompt_features')
 
     text_condition = model.run_text_encoder(
         tokens, prompt_tokens, prompt_features_len, speed
