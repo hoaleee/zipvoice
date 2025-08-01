@@ -475,6 +475,25 @@ def generate_sentence(
     # Postprocess predicted features
     pred_features = pred_features.permute(0, 2, 1) / feat_scale  # (B, C, T)
 
+    print(f"Shape của tensor 'mel': {pred_features.shape}")
+
+    # Lấy shape
+    mel_shape = pred_features.shape
+
+    # SỬA LỖI: Làm phẳng tensor ngay tại đây và chuyển sang list
+    # .flatten() sẽ biến mảng đa chiều thành mảng 1 chiều
+    mel_flat_list = pred_features.numpy().flatten().tolist()
+
+    print(f"Số phần tử trong mảng đã làm phẳng: {len(mel_flat_list)}")
+
+    # Đóng gói shape và dữ liệu phẳng
+    data_to_save = {
+        "shape": mel_shape,
+        "data": mel_flat_list  # Dữ liệu giờ là mảng 1 chiều
+    }
+    with open("debug_preds.json", "w") as f:
+        json.dump(data_to_save, f)
+
     # Start vocoder processing
     start_vocoder_t = dt.datetime.now()
     wav = vocoder.decode(pred_features).squeeze(1).clamp(-1, 1)
