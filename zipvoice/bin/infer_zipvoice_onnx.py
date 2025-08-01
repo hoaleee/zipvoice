@@ -479,6 +479,9 @@ def generate_sentence(
     start_vocoder_t = dt.datetime.now()
     wav = vocoder.decode(pred_features).squeeze(1).clamp(-1, 1)
 
+    np.save("debug_wav.npy", wav.numpy())
+    print("!!! Đã lưu pred_features cuối cùng vào file debug_wav.npy")
+
     # Calculate processing times and real-time factors
     t = (dt.datetime.now() - start_t).total_seconds()
     t_no_vocoder = (start_vocoder_t - start_t).total_seconds()
