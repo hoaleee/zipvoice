@@ -315,6 +315,20 @@ class OnnxModel:
         )
         return torch.from_numpy(out[0])
 
+def debug(
+    tensor:Tensor,
+    name: str,
+):
+    print(f"Shape của tensor: {tensor.shape}")
+    mel_shape = tensor.shape
+    mel_flat_list = tensor.numpy().flatten().tolist()
+    print(f"Số phần tử trong mảng đã làm phẳng: {len(mel_flat_list)}")
+    data_to_save = {
+        "shape": mel_shape,
+        "data": mel_flat_list
+    }
+    with open("debug_"+name+".json", "w") as f:
+        json.dump(data_to_save, f)
 
 def sample(
     model: OnnxModel,
@@ -346,17 +360,18 @@ def sample(
     prompt_tokens = torch.tensor(prompt_tokens, dtype=torch.int64)
     prompt_features_len = torch.tensor(prompt_features.size(1), dtype=torch.int64)
     speed = torch.tensor(speed, dtype=torch.float32)
+    debug(tokens, 'tokens')
+    debug(prompt_tokens, 'prompt_tokens')
 
     text_condition = model.run_text_encoder(
         tokens, prompt_tokens, prompt_features_len, speed
     )
-    np.save("debug_text_condition.npy", text_condition.numpy())
-    print("!!! Đã lưu text_condition vào file debug_text_condition.npy")
+    debug(text_condition, 'text_condition')
 
     batch_size, num_frames, _ = text_condition.shape
     assert batch_size == 1
     feat_dim = model.feat_dim
-
+    print('feat_dim', feat_dim)
     # Run flow matching model
     timesteps = get_time_steps(
         t_start=0.0,
@@ -368,8 +383,8 @@ def sample(
     speech_condition = torch.nn.functional.pad(
         prompt_features, (0, 0, 0, num_frames - prompt_features.shape[1])
     )  # (B, T, F)
-    np.save("debug_speech_condition.npy", speech_condition.numpy())
-    print("!!! Đã lưu pred_features cuối cùng vào file debug_speech_condition.npy")
+    debug(speech_condition, 'speech_condition')
+
     guidance_scale = torch.tensor(guidance_scale, dtype=torch.float32)
 
     for step in range(num_step):
@@ -383,8 +398,7 @@ def sample(
         x = x + v * (timesteps[step + 1] - timesteps[step])
 
     x = x[:, prompt_features_len.item() :, :]
-    np.save("debug_pred_features.npy", x.numpy())
-    print("!!! Đã lưu pred_features cuối cùng vào file debug_pred_features.npy")
+
     return x
 
 
@@ -476,20 +490,12 @@ def generate_sentence(
     pred_features = pred_features.permute(0, 2, 1) / feat_scale  # (B, C, T)
 
     print(f"Shape của tensor 'mel': {pred_features.shape}")
-
-    # Lấy shape
     mel_shape = pred_features.shape
-
-    # SỬA LỖI: Làm phẳng tensor ngay tại đây và chuyển sang list
-    # .flatten() sẽ biến mảng đa chiều thành mảng 1 chiều
     mel_flat_list = pred_features.numpy().flatten().tolist()
-
     print(f"Số phần tử trong mảng đã làm phẳng: {len(mel_flat_list)}")
-
-    # Đóng gói shape và dữ liệu phẳng
     data_to_save = {
         "shape": mel_shape,
-        "data": mel_flat_list  # Dữ liệu giờ là mảng 1 chiều
+        "data": mel_flat_list
     }
     with open("debug_preds.json", "w") as f:
         json.dump(data_to_save, f)
